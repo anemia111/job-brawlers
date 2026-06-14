@@ -1,0 +1,209 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>JOB BRAWLERS：職業大乱闘</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <main id="app">
+    <canvas id="gameCanvas" width="960" height="540" aria-label="JOB BRAWLERS game canvas"></canvas>
+    <div id="battleControlsHint" class="battle-controls-hint hidden" aria-live="off">
+      A/D 移動　W/S 上下　K 通常　L 強攻撃/長押しスマッシュ　H スキル　J 必殺技　U つかみ　I ガード　O 回避
+    </div>
+    <div id="touchControls" class="touch-controls hidden" aria-label="スマホ用ゲームパッド">
+      <div class="touch-landscape-warning">スマホを横向きにして遊んでください</div>
+      <div class="touch-pad touch-dpad" aria-label="方向操作">
+        <button class="touch-btn touch-dir touch-up" type="button" data-touch-action="up" aria-label="上">▲</button>
+        <button class="touch-btn touch-dir touch-left" type="button" data-touch-action="left" aria-label="左">◀</button>
+        <button class="touch-btn touch-dir touch-down" type="button" data-touch-action="down" aria-label="下">▼</button>
+        <button class="touch-btn touch-dir touch-right" type="button" data-touch-action="right" aria-label="右">▶</button>
+      </div>
+      <div class="touch-pad touch-actions" aria-label="アクション操作">
+        <button class="touch-btn touch-action touch-jump" type="button" data-touch-action="jump" aria-label="ジャンプ">JMP</button>
+        <button class="touch-btn touch-action touch-normal" type="button" data-touch-action="normal" aria-label="通常攻撃">K</button>
+        <button class="touch-btn touch-action touch-strong" type="button" data-touch-action="strong" aria-label="強攻撃">L</button>
+        <button class="touch-btn touch-action touch-guard" type="button" data-touch-action="guard" aria-label="ガード">I</button>
+        <button class="touch-btn touch-action touch-dodge" type="button" data-touch-action="dodge" aria-label="緊急回避">O</button>
+        <button class="touch-btn touch-action touch-grab" type="button" data-touch-action="grab" aria-label="つかみ">U</button>
+        <button class="touch-btn touch-action touch-skill" type="button" data-touch-action="skill" aria-label="スキル">H</button>
+        <button class="touch-btn touch-action touch-ultimate" type="button" data-touch-action="ultimate" aria-label="必殺技">ULT</button>
+      </div>
+    </div>
+
+    <section id="titleScreen" class="screen title-screen">
+      <div class="brand-block">
+        <p class="kicker">ONLINE / CPU BATTLE</p>
+        <h1>JOB BRAWLERS：職業大乱闘</h1>
+        <p class="lead">P1はキーボードで参戦。他の相手はCPU、またはオンラインの別プレイヤー。</p>
+        <div class="mode-actions">
+          <button id="startButton" class="primary-button" type="button">CPU戦</button>
+          <button id="onlineModeButton" class="primary-button secondary-button" type="button">オンライン対戦</button>
+        </div>
+        <p class="hint">Enter / 1：CPU戦　2：オンライン対戦　R：リスタート　F1：デバッグ　U：つかみ/投げ　I：ガード　O：緊急回避　L長押し：スマッシュため　J：必殺技</p>
+      </div>
+    </section>
+
+    <section id="cpuSetupScreen" class="screen setup-screen hidden">
+      <header class="setup-header">
+        <div>
+          <p class="kicker">CPU BATTLE</p>
+          <h2>CPU戦設定</h2>
+        </div>
+        <p id="cpuSetupSummary" class="setup-summary">P1 + CPU1体 / 難易度 Normal</p>
+      </header>
+      <div class="setup-grid">
+        <article class="setup-panel">
+          <h3>CPU人数</h3>
+          <div class="segmented-control">
+            <button class="count-button active" data-cpu-count="1" type="button">1</button>
+            <button class="count-button" data-cpu-count="2" type="button">2</button>
+            <button class="count-button" data-cpu-count="3" type="button">3</button>
+          </div>
+        </article>
+        <article class="setup-panel">
+          <h3>CPU難易度</h3>
+          <div class="segmented-control">
+            <button class="count-button" data-cpu-difficulty="Easy" type="button">Easy</button>
+            <button class="count-button active" data-cpu-difficulty="Normal" type="button">Normal</button>
+            <button class="count-button" data-cpu-difficulty="Hard" type="button">Hard</button>
+          </div>
+        </article>
+      </div>
+      <footer class="setup-footer">
+        <span>A/D or ←/→：CPU人数</span>
+        <span>Q/W/E：難易度</span>
+        <span>Enter：キャラクター選択へ</span>
+        <button id="cpuToCharacterButton" class="primary-button" type="button">キャラクター選択へ</button>
+      </footer>
+    </section>
+
+    <section id="selectScreen" class="screen select-screen hidden">
+      <header class="select-header">
+        <div>
+          <p class="kicker">CHARACTER SELECT</p>
+          <h2>P1キャラクター選択</h2>
+        </div>
+      </header>
+
+      <div id="playerPanels" class="player-panels"></div>
+      <div class="character-page-bar">
+        <button id="prevCharacterPage" class="count-button" type="button">Q 前ページ</button>
+        <strong id="characterPageStatus">Page 1 / 1</strong>
+        <button id="nextCharacterPage" class="count-button" type="button">E 次ページ</button>
+      </div>
+      <div id="characterGrid" class="character-grid" aria-live="polite"></div>
+
+      <footer class="select-footer">
+        <span>A/D or ←/→: 選択</span>
+        <span>Q/E: ページ切替</span>
+        <span>クリック: 選択 / ダブルクリック: 決定</span>
+        <span>ゲームパッド: 十字キー/Aボタン</span>
+        <span>Enter: 現在の選択でステージへ</span>
+        <button id="toStageButton" class="primary-button compact-button" type="button">ステージ選択へ</button>
+      </footer>
+    </section>
+
+    <section id="stageScreen" class="screen stage-screen hidden">
+      <header class="stage-header">
+        <div>
+          <p class="kicker">STAGE SELECT</p>
+          <h2>ステージ選択</h2>
+        </div>
+        <p class="stage-control">← / A：前へ　→ / D：次へ　Enter：開始　Esc：戻る</p>
+      </header>
+
+      <div id="stagePreview" class="stage-preview" aria-live="polite"></div>
+      <div class="rule-row" aria-label="残機数選択">
+        <strong id="stockRuleLabel">残機数: 3</strong>
+        <button class="count-button" data-stocks="1" type="button">1</button>
+        <button class="count-button" data-stocks="2" type="button">2</button>
+        <button class="count-button active" data-stocks="3" type="button">3</button>
+        <button class="count-button" data-stocks="4" type="button">4</button>
+        <button class="count-button" data-stocks="5" type="button">5</button>
+      </div>
+      <div id="stageCards" class="stage-cards"></div>
+    </section>
+
+    <section id="onlineLobbyScreen" class="screen online-screen hidden">
+      <header class="setup-header">
+        <div>
+          <p class="kicker">ONLINE LOBBY</p>
+          <h2>オンライン対戦</h2>
+        </div>
+        <p id="roomIdDisplay" class="setup-summary">ルーム未参加</p>
+      </header>
+      <div class="online-grid">
+        <article class="setup-panel">
+          <h3>ルーム</h3>
+          <button id="createRoomButton" class="primary-button compact-button" type="button">ルーム作成</button>
+          <label class="field-label" for="roomIdInput">ルームID</label>
+          <div class="join-row">
+            <input id="roomIdInput" type="text" inputmode="latin" autocomplete="off" placeholder="ABCD12">
+            <button id="joinRoomButton" class="primary-button compact-button" type="button">参加</button>
+          </div>
+          <p id="onlineStatus" class="hint">サーバーに接続中...</p>
+          <p id="onlineErrorText" class="online-error" aria-live="polite"></p>
+          <dl class="online-debug-grid" aria-label="オンライン接続情報">
+            <div>
+              <dt>接続</dt>
+              <dd id="onlineConnectionState">接続中</dd>
+            </div>
+            <div>
+              <dt>socket.id</dt>
+              <dd id="onlineSocketId">---</dd>
+            </div>
+            <div>
+              <dt>roomId</dt>
+              <dd id="onlineRoomDebug">---</dd>
+            </div>
+            <div>
+              <dt>人数</dt>
+              <dd id="onlinePlayerCount">0 / 4</dd>
+            </div>
+          </dl>
+        </article>
+        <article class="setup-panel">
+          <h3>自分の設定</h3>
+          <label class="field-label" for="onlineCharacterSelect">キャラクター</label>
+          <select id="onlineCharacterSelect"></select>
+          <button id="onlineReadyButton" class="primary-button compact-button" type="button">準備OK切替</button>
+        </article>
+        <article class="setup-panel host-only">
+          <h3>ホスト設定</h3>
+          <label class="field-label" for="onlineStageSelect">ステージ</label>
+          <select id="onlineStageSelect"></select>
+          <label class="field-label" for="onlineStockSelect">残機数</label>
+          <select id="onlineStockSelect"></select>
+          <button id="onlineStartButton" class="primary-button compact-button" type="button" disabled>試合開始</button>
+        </article>
+        <article class="setup-panel">
+          <h3>参加プレイヤー</h3>
+          <ul id="onlinePlayerList" class="online-player-list"></ul>
+        </article>
+      </div>
+      <footer class="setup-footer">
+        <span>最大4人 / 1人1端末または1ブラウザ</span>
+        <span>ホストがステージと残機数を選択</span>
+        <button id="onlineBackButton" class="primary-button compact-button" type="button">メニューへ戻る</button>
+      </footer>
+    </section>
+
+    <section id="hud" class="hud hidden" aria-live="polite"></section>
+
+    <section id="resultScreen" class="screen result-screen hidden">
+      <div class="result-card">
+        <p class="kicker">RESULT</p>
+        <h2 id="winnerText">Winner</h2>
+        <p id="winnerSubText"></p>
+        <button id="restartButton" class="primary-button" type="button">タイトルへ戻る</button>
+        <p class="hint">Rでもリスタート</p>
+      </div>
+    </section>
+  </main>
+
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="main.js"></script>
+</body>
+</html>
