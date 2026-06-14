@@ -2,7 +2,7 @@ services:
   - type: web
     name: job-brawlers
     runtime: node
-    plan: starter
+    plan: free
     region: singapore
     numInstances: 1
     autoDeployTrigger: commit
