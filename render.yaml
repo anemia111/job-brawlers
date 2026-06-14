@@ -1,0 +1,20 @@
+services:
+  - type: web
+    name: job-brawlers
+    runtime: node
+    plan: starter
+    region: singapore
+    numInstances: 1
+    autoDeployTrigger: commit
+    buildCommand: npm ci
+    startCommand: npm start
+    healthCheckPath: /healthz
+    renderSubdomainPolicy: enabled
+    maxShutdownDelaySeconds: 30
+    envVars:
+      - key: NODE_VERSION
+        value: 20
+      - key: NODE_ENV
+        value: production
+      - key: MAX_PLAYERS
+        value: 4
